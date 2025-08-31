@@ -67,4 +67,4 @@ RUN chmod -R 755 /opt/browsers \
 COPY --from=builder /usr/bin/google-maps-scraper /usr/bin/
 
 # ENTRYPOINT: scraper arka planda çalışırken HTTP server ana thread’de
-ENTRYPOINT ["sh", "-c", "google-maps-scraper -data-folder /gmapsdata -port $PORT & http-server -p $PORT"]
+ENTRYPOINT ["google-maps-scraper", "-data-folder", "/gmapsdata", "-port", "$PORT"]
