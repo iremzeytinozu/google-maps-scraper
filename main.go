@@ -20,54 +20,42 @@ import (
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-
 	runner.Banner()
-
-	// HTTP Server ekle (Railway URL üzerinden erişim için)
-	go func() {
-		port := os.Getenv("PORT")
-		if port == "" {
-			port = "8080"
-		}
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "Google Maps Scraper is running!")
-		})
-		log.Println("HTTP server listening on port", port)
-		log.Fatal(http.ListenAndServe("0.0.0.0:"+port, nil))
-	}()
 
 	// Signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
 	go func() {
 		<-sigChan
 		log.Println("Received signal, shutting down...")
 		cancel()
 	}()
 
-	cfg := runner.ParseConfig()
-
-	runnerInstance, err := runnerFactory(cfg)
-	if err != nil {
-		cancel()
-		os.Stderr.WriteString(err.Error() + "\n")
-		runner.Telemetry().Close()
-		os.Exit(1)
-	}
-
-	if err := runnerInstance.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-		os.Stderr.WriteString(err.Error() + "\n")
+	// Scraper job'larını arka planda çalıştır
+	go func() {
+		cfg := runner.ParseConfig()
+		runnerInstance, err := runnerFactory(cfg)
+		if err != nil {
+			log.Println("Error creating runner:", err)
+			return
+		}
+		if err := runnerInstance.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Println("Error running runner:", err)
+		}
 		_ = runnerInstance.Close(ctx)
 		runner.Telemetry().Close()
-		cancel()
-		os.Exit(1)
-	}
+	}()
 
-	_ = runnerInstance.Close(ctx)
-	runner.Telemetry().Close()
-	cancel()
-	os.Exit(0)
+	// HTTP Server (ana thread)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Google Maps Scraper is running!")
+	})
+	log.Println("HTTP server listening on port", port)
+	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, nil))
 }
 
 func runnerFactory(cfg *runner.Config) (runner.Runner, error) {
