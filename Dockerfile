@@ -23,8 +23,14 @@ RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o /usr/bin/google-maps-scraper
 
 # Final stage
 FROM debian:bullseye-slim
+
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/browsers
 ENV PLAYWRIGHT_DRIVER_PATH=/opt
+ENV PORT=8080
+
+# Data klasörü oluştur
+RUN mkdir -p /gmapsdata
+RUN chmod -R 755 /gmapsdata
 
 # Install only the necessary dependencies in a single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -59,4 +65,4 @@ RUN chmod -R 755 /opt/browsers \
 
 COPY --from=builder /usr/bin/google-maps-scraper /usr/bin/
 
-ENTRYPOINT ["google-maps-scraper"]
+ENTRYPOINT ["google-maps-scraper", "-data-folder", "/gmapsdata", "-port", "$PORT"]
