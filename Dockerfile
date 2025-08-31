@@ -1,7 +1,6 @@
 # Build stage for Playwright dependencies
 FROM golang:1.24.6-bullseye AS playwright-deps
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/browsers
-#ENV PLAYWRIGHT_DRIVER_PATH=/opt/
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -32,7 +31,7 @@ ENV PORT=8080
 RUN mkdir -p /gmapsdata
 RUN chmod -R 755 /gmapsdata
 
-# Install only the necessary dependencies in a single layer
+# Gerekli bağımlılıkları yükle
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libnss3 \
@@ -57,12 +56,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Playwright dosyalarını kopyala
 COPY --from=playwright-deps /opt/browsers /opt/browsers
 COPY --from=playwright-deps /root/.cache/ms-playwright-go /opt/ms-playwright-go
 
 RUN chmod -R 755 /opt/browsers \
     && chmod -R 755 /opt/ms-playwright-go
 
+# Scraper ve HTTP server
 COPY --from=builder /usr/bin/google-maps-scraper /usr/bin/
 
-ENTRYPOINT ["google-maps-scraper", "-data-folder", "/gmapsdata", "-port", "$PORT"]
+# ENTRYPOINT: scraper arka planda çalışırken HTTP server ana thread’de
+ENTRYPOINT ["sh", "-c", "google-maps-scraper -data-folder /gmapsdata -port $PORT & http-server -p $PORT"]
