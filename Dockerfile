@@ -59,12 +59,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Playwright dosyalarını kopyala
 COPY --from=playwright-deps /opt/browsers /opt/browsers
 COPY --from=playwright-deps /root/.cache/ms-playwright-go /opt/ms-playwright-go
+RUN chmod -R 755 /opt/browsers /opt/ms-playwright-go
 
-RUN chmod -R 755 /opt/browsers \
-    && chmod -R 755 /opt/ms-playwright-go
-
-# Scraper ve HTTP server
+# Scraper binary'yi kopyala
 COPY --from=builder /usr/bin/google-maps-scraper /usr/bin/
 
-# ENTRYPOINT: scraper arka planda çalışırken HTTP server ana thread’de
+# ENTRYPOINT: Go HTTP server ve scraper
 ENTRYPOINT ["google-maps-scraper", "-data-folder", "/gmapsdata", "-port", "$PORT"]
