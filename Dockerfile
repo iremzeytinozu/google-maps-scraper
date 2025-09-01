@@ -1,7 +1,7 @@
-# Build stage for Playwright dependencies
+# Build stage for Playwright dependencies - Railway optimized
 FROM golang:1.24.6-bullseye AS playwright-deps
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/browsers
-#ENV PLAYWRIGHT_DRIVER_PATH=/opt/
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -58,5 +58,7 @@ RUN chmod -R 755 /opt/browsers \
     && chmod -R 755 /opt/ms-playwright-go
 
 COPY --from=builder /usr/bin/google-maps-scraper /usr/bin/
+COPY railway-start.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/railway-start.sh
 
-ENTRYPOINT ["google-maps-scraper"]
+ENTRYPOINT ["/usr/local/bin/railway-start.sh"]

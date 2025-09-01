@@ -1,0 +1,21 @@
+{
+  "name": "google-maps-scraper",
+  "version": "1.0.0",
+  "description": "Google Maps Scraper optimized for Railway deployment",
+  "railway": {
+    "memory": 4096,
+    "cpu": 2,
+    "timeout": 900,
+    "environment": "production"
+  },
+  "healthcheck": {
+    "path": "/",
+    "timeout": 30,
+    "interval": 60
+  },
+  "limits": {
+    "workers": 1,
+    "depth": 3,
+    "requests_per_minute": 30
+  }
+}
